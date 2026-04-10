@@ -12,6 +12,7 @@ from FunctionCalling.WriteFile import write_file
 from FunctionCalling.ReadFile import read_file
 from FunctionCalling.ListFiles import readList_command
 from FunctionCalling.CreateFile import create_file
+from FunctionCalling.DeleteFile import delete_file
 from Prompt.EnvironmentPrompt import EnvironmentPrompt
 from Database_Data.Database import get_db_config
 
@@ -28,7 +29,7 @@ class EnvironmentAgent:
             base_url="https://api.deepseek.com",
             model="deepseek-chat")
 
-        tools = [input_sql, write_file, read_file, readList_command, create_file]
+        tools = [input_sql, write_file, read_file, readList_command, create_file, delete_file]
 
         agent = create_agent(
             model=DeepseekLlm,
