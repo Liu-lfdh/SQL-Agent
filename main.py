@@ -2,6 +2,7 @@ from Database_Data.Database import init_db, execute_sql, close_db
 from Agent.EnvironmentAgent import EnvironmentAgent
 from Agent.SqlAgent import SqlAgent
 from Agent.TestAgent import TestAgent
+from Agent.MasterAgent import MasterAgent
 
 def main():
     print("正在连接数据库")
@@ -31,12 +32,8 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-        agent = EnvironmentAgent().create_agent()
-        result = agent.invoke({"messages": [{"role": "user", "content": "请你只为sql_agent这个数据库更新对应环境文件"}]})
-        # agent = SqlAgent().create_agent()
-        # result = agent.invoke({"messages": [{"role": "user", "content": """
-
-        # """}]})
+        agent = MasterAgent().create_agent()
+        result = agent.invoke({"messages": [{"role": "user", "content": ""}]})
         print("Agent 执行结果:\n")
         for msg in result.get("messages", []):
             msg_type = getattr(msg, 'type', None)

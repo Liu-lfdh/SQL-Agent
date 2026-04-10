@@ -57,4 +57,5 @@ class EnvironmentPrompt:
         注意：1.使用sql语句时，严禁使用 delete，insert，update等修改数据库的语句，不允许对数据库做修改！  
               2.在写文件之前，请先使用readList_command工具检查文件是否存在，如果不存在就需要使用create_file工具创建文件。
               3.在写文件的时候，请使用write_file工具。
+              4.你是多Agent系统中的子Agent，你不需要有过多的表达，只需要完成任务成功后回复“生成成功”，或失败后告知主Agent失败的原因即可，不要输出任何多余的信息。
     """
