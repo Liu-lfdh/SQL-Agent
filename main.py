@@ -1,12 +1,55 @@
-from Database_Data.Database import init_db, execute_sql, close_db
-from Agent.EnvironmentAgent import EnvironmentAgent
-from Agent.SqlAgent import SqlAgent
-from Agent.TestAgent import TestAgent
+import glob
+import os
+
+from Database_Data.Database import init_db, close_db
 from Agent.MasterAgent import MasterAgent
 from Context.MasterContext import MasterContext
 from Context.message import message
 
-def main():
+
+def list_contexts() -> list[str]:
+    data_dir = os.path.join(os.path.dirname(__file__), "Context", "Data")
+    if not os.path.exists(data_dir):
+        return []
+    files = glob.glob(os.path.join(data_dir, "*.json"))
+    return [os.path.splitext(os.path.basename(f))[0] for f in files]
+
+
+def pick_context() -> str | None:
+    contexts = list_contexts()
+    if not contexts:
+        return None
+    print("\n已保存的上下文：")
+    for i, name in enumerate(contexts):
+        print(f"  {i + 1}. {name}")
+    print(f"  0. 新建会话")
+    while True:
+        choice = input("请选择要加载的上下文编号（0 新建）: ")
+        try:
+            idx = int(choice)
+            if idx == 0:
+                return None
+            if 1 <= idx <= len(contexts):
+                return contexts[idx - 1]
+        except ValueError:
+            pass
+        print("输入无效，请重新选择")
+
+
+def load_or_create_context() -> MasterContext:
+    name = pick_context()
+    if name is None:
+        return MasterContext([])
+    ctx = MasterContext([])
+    ctx.title = name
+    data_dir = os.path.join(os.path.dirname(__file__), "Context", "Data")
+    file_path = os.path.join(data_dir, name + ".json")
+    ctx.loadMessage(file_path)
+    print(f"已加载上下文: {name}\n")
+    return ctx
+
+
+def init_db_connection():
     print("正在连接数据库")
     try:
         init_db(
@@ -17,44 +60,61 @@ def main():
         )
     except Exception:
         print("连接失败")
-        return
+        return False
     print("连接成功\n")
+    return True
+
+
+def build_messages(context: MasterContext) -> list:
+    messages = []
+    for msg in context.data:
+        msg_dict = {"role": msg.getRole(), "content": msg.getContent()}
+        if msg.getRole() == "tool" and msg.getToolCallId():
+            msg_dict["tool_call_id"] = msg.getToolCallId()
+        if msg.getRole() == "ai" and msg.getToolCalls():
+            msg_dict["tool_calls"] = msg.getToolCalls()
+        messages.append(msg_dict)
+    return messages
+
+
+def save_result_messages(result: dict, context: MasterContext,userContent: str) -> None:
+    isNewMessage = False
+    for msg in result.get("messages", []):
+        if isNewMessage == True:
+            context.addMessage(message(
+                msg.type,
+                msg.content,
+                getattr(msg, "tool_call_id", ""),
+                getattr(msg, "tool_calls", "")
+            ))
+        elif msg.type == "human" and msg.content == userContent:
+            isNewMessage = True    
+
+
+def chat_loop(agent, context: MasterContext) -> None:
+    while True:
+        content = input("user: ")
+        if content == "exit":
+            print("退出程序")
+            break
+        context.addUserMessage(content)
+        messages = build_messages(context)
+        result = agent.invoke({"messages": messages})
+        save_result_messages(result, context, content)
+        context.saveMessage()
+        print(f"assistant: {result.get('messages', [])[-1].content}")
+
+
+def main():
+    if not init_db_connection():
+        return
+    agent = MasterAgent().create_agent()
+    context = load_or_create_context()
+    chat_loop(agent, context)
+
 
 if __name__ == "__main__":
     try:
         main()
-        agent = MasterAgent().create_agent()
-        content = ""
-        context = MasterContext([])
-        while(True):
-            content = input("user: ")
-            if content == "exit":
-                print("退出程序")
-                break
-            context.addUserMessage(content)
-            # 构建消息列表，保留 tool_call_id 和 tool_calls
-            messages = []
-            for msg in context.data:
-                msg_dict = {"role": msg.getRole(), "content": msg.getContent()}
-                if msg.getRole() == "tool" and msg.getToolCallId():
-                    msg_dict["tool_call_id"] = msg.getToolCallId()
-                if msg.getRole() == "ai" and msg.getToolCalls():
-                    msg_dict["tool_calls"] = msg.getToolCalls()
-                messages.append(msg_dict)
-            result = agent.invoke({"messages": messages})
-            print("Agent 执行结果:\n")
-            newMessage = False
-            for msg in result.get("messages", []):
-                msg_type = getattr(msg, 'type', None)
-                msg_Content = getattr(msg, "content", None)
-                msg_tool_call_id = getattr(msg, "tool_call_id", "")
-                msg_tool_calls = getattr(msg, "tool_calls", "")
-                if newMessage == True:
-                    print(f"[type]: {msg_type}")
-                    print(f"[content]: {msg_Content}")
-                    context.addMessage(message(msg_type, msg_Content, msg_tool_call_id, msg_tool_calls))
-                    print("---")
-                elif msg_type == "human" and msg_Content == content:
-                    newMessage = True
     finally:
         close_db()    

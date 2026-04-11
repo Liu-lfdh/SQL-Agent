@@ -1,26 +1,39 @@
 import os
 from langchain_core.tools import tool
 
-ALLOWED_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
 
 @tool
 def read_file(file_path: str) -> str:
-    """输入读取文件的路径，返回文件内容
+    """读取项目 ./ 目录下的文件内容
     Args:
-        file_path: 需要读取的文件路径，必须位于项目根目录下
+        file_path: 需要读取的文件路径，相对路径基于项目根目录(.)
     """
-    print(f"[read_file输入] {file_path}")
-    full_path = os.path.normpath(os.path.join(ALLOWED_DIR, file_path))
-    if not full_path.startswith(ALLOWED_DIR):
-        result = "错误: 不允许读取项目目录以外的的文件"
+    print(f"[read_file输入] 文件: {file_path}")
+    target = os.path.normpath(file_path)
+    abs_target = os.path.abspath(target)
+    abs_root = os.path.abspath(".")
+
+    # 安全检查：确保解析后的路径在项目根目录下
+    if not abs_target.startswith(abs_root + os.sep) and abs_target != abs_root:
+        result = f"错误: 不允许读取项目根目录以外的文件: {file_path}"
         print(f"[read_file输出] {result}")
         return result
+
+    if not os.path.exists(target):
+        result = f"错误: 文件不存在: {file_path}"
+        print(f"[read_file输出] {result}")
+        return result
+
+    if not os.path.isfile(target):
+        result = f"错误: 路径不是文件: {file_path}"
+        print(f"[read_file输出] {result}")
+        return result
+
     try:
-        with open(full_path, 'r', encoding='utf-8') as file:
+        with open(target, 'r', encoding='utf-8') as file:
             content = file.read()
-        print(f"[read_file输出] 成功读取文件，共 {len(content)} 字符")
-        return content
+        result = content
     except Exception as e:
         result = f"读取文件失败: {str(e)}"
-        print(f"[read_file输出] {result}")
-        return result
+    print(f"[read_file输出] 成功读取文件，共 {len(result)} 字符")
+    return result
