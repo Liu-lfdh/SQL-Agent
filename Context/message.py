@@ -26,4 +26,4 @@ class message:
         self.role = role
 
     def setContent(self, content: str):
-        self.content = content 
+        self.content = content

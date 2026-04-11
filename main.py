@@ -97,6 +97,8 @@ def chat_loop(agent, context: MasterContext) -> None:
         if content == "exit":
             print("退出程序")
             break
+        if not content.strip():
+            continue
         context.addUserMessage(content)
         messages = build_messages(context)
         result = agent.invoke({"messages": messages})
