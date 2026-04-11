@@ -3,8 +3,8 @@ from langchain_core.tools import tool
 import os
 
 
-ALLOWED_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../Database_Data/"))
-ALLOWED_PREFIX = "dir /b ..\\Database_Data"
+ALLOWED_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
+ALLOWED_PREFIX = "dir /b ..\\"
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -12,7 +12,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def readList_command(command: str) -> str:
     """执行目录列表命令，用于查看目录下的文件列表
     Args:
-        command: 执行的Windows命令，输入必须以 'dir /b ..\\Database_Data' 开头，返回命令行输出
+        command: 执行的Windows命令，输入必须以 'dir /b ..\\' 开头，返回命令行输出
     """
     print(f"[readList_command输入] {command}")
     if not command.strip().startswith(ALLOWED_PREFIX):
