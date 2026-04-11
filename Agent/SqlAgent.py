@@ -14,20 +14,15 @@ from FunctionCalling.ReadFile import read_file
 from FunctionCalling.ListFiles import readList_command
 from FunctionCalling.CreateFile import create_file
 from Prompt.SqlPrompt import SqlPrompt
+from Llm.Deepseek import Deepseek
 from Database_Data.Database import get_db_config
 
 class SqlAgent:
     def create_agent(self):
-        DeepseekLlm = ChatOpenAI(
-            api_key="sk-ad872c810fdf4f2bb0dfb0e51115115f",
-            base_url="https://api.deepseek.com",
-            model="deepseek-chat")
-        
         tools = [input_sql,read_file,readList_command]
         
-
         agent = create_agent(
-            model=DeepseekLlm,
+            model=Deepseek().getLlm(),
             tools=tools,
             system_prompt=SystemMessage(content="当前连接数据库信息：" + str(get_db_config()) + " " + SqlPrompt.getPrompt()),
             )
