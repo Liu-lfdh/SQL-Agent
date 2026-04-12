@@ -11,7 +11,7 @@ from langchain_openai import ChatOpenAI
 class TestAgent:
     def create_agent(self):
         llm = ChatOpenAI(
-            api_key="sk-ead34420bd364abd896e0e7db1b5b4e2",
+            api_key="",
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
             model="qwen-plus-2025-07-28")
 
