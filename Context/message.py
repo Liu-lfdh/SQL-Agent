@@ -27,3 +27,6 @@ class message:
 
     def setContent(self, content: str):
         self.content = content
+
+    def __len__(self) -> int:
+        return len(f"{self.role}{self.content}{self.tool_call_id}{self.tool_calls}".encode('utf-8'))

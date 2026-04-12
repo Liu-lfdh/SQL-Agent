@@ -78,17 +78,8 @@ def build_messages(context: MasterContext) -> list:
 
 
 def save_result_messages(result: dict, context: MasterContext,userContent: str) -> None:
-    isNewMessage = False
-    for msg in result.get("messages", []):
-        if isNewMessage == True:
-            context.addMessage(message(
-                msg.type,
-                msg.content,
-                getattr(msg, "tool_call_id", ""),
-                getattr(msg, "tool_calls", "")
-            ))
-        elif msg.type == "human" and msg.content == userContent:
-            isNewMessage = True    
+    context.addAllMessagesFromResult(result)
+      
 
 
 def chat_loop(agent, context: MasterContext) -> None:
@@ -112,6 +103,8 @@ def main():
         return
     agent = MasterAgent().create_agent()
     context = load_or_create_context()
+    # 将 agent 存储在 context 中，以便在需要时调用
+    context.setAgent(agent)
     chat_loop(agent, context)
 
 
