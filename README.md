@@ -10,6 +10,7 @@
 - **上下文持久化**：对话历史自动保存为 JSON，支持跨会话恢复
 - **SQL 安全保护**：危险操作（DELETE/UPDATE/DROP 等）执行前需手动确认
 - **大内容自动卸载**：超过 20KB 的工具输出自动存储为独立文件，避免上下文膨胀
+- **上下文自动压缩**：超出阈值时触发清理，工具调用详情自动精简，必要时调用压缩 Agent 对历史对话进行摘要
 
 ## 项目结构
 
@@ -37,7 +38,8 @@ SQL-Agent/
 ├── Prompt/                      # 系统提示词
 │   ├── MasterPrompt.py          # MasterAgent 提示词
 │   ├── SqlPrompt.py             # SqlAgent 提示词
-│   └── EnvironmentPrompt.py     # EnvironmentAgent 提示词
+│   ├── EnvironmentPrompt.py     # EnvironmentAgent 提示词
+│   └── CompressionPrompt.py     # CompressionAgent 提示词
 │
 ├── Context/                     # 上下文管理
 │   ├── MasterContext.py         # 上下文管理器（持久化/加载）
@@ -105,6 +107,9 @@ SQL 生成专家。接收任务描述和数据库结构信息，生成对应的 
 ### TitleAgent
 会话标题生成器。根据用户的第一条消息自动生成简洁的会话标题（20 字符以内）。
 
+### CompressionAgent
+对话压缩专家。接收过长的历史对话，提取关键信息（客观事实、用户意图、SQL 语句），生成精简摘要。
+
 ## 工具说明
 
 | 工具 | 功能 |
@@ -166,6 +171,12 @@ python main.py
 
 ### 避免重复存储
 当 LLM 调用 `read_file` 读取已持久化的数据时，返回结果会被自动清空，防止同一条数据在上下文中重复存储。
+
+### 自动压缩机制
+当上下文 tokens 数超过 `max_tokens * compression_threshold` 时，触发两级压缩：
+
+1. **工具消息清理**：白名单外（`delete_file`、`input_sql` 以外）的工具调用 `args` 参数被清空，`content` 替换为占位文本
+2. **全量压缩**：若工具清理后仍超出阈值，则保留近三轮完整对话，更早的对话交给 CompressionAgent 生成摘要，拼接到最早一轮用户消息中，随后再执行一次工具消息清理
 
 ## 技术栈
 
