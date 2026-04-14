@@ -1,3 +1,5 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 # SQL-Agent
 
 基于 Windows 操作系统的 MySQL 数据库智能 Agent，采用多 Agent 架构，支持自然语言对话式的 SQL 查询生成、执行和数据库结构探索。
