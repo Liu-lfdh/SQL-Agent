@@ -1,5 +1,6 @@
 import os
 from langchain_core.tools import tool
+from openpyxl import load_workbook
 
 
 @tool
@@ -9,31 +10,34 @@ def excel_reader(file_path: str) -> str:
         file_path: Excel文件的绝对路径或相对于项目根目录的路径
     """
     print(f"[excel_reader输入] 文件: {file_path}")
-
-    if not os.path.isabs(file_path):
-        file_path = os.path.abspath(file_path)
-
-    if not os.path.exists(file_path):
-        result = f"错误: 文件不存在: {file_path}"
-        print(f"[excel_reader输出] {result}")
-        return result
-
-    # 安全检查：确保文件路径在项目根目录下
+    target = os.path.normpath(file_path)
+    abs_target = os.path.abspath(target)
     abs_root = os.path.abspath(".")
-    if not file_path.startswith(abs_root + os.sep) and file_path != abs_root:
+
+    # 安全检查：确保解析后的路径在项目根目录下
+    if not abs_target.startswith(abs_root + os.sep) and abs_target != abs_root:
         result = f"错误: 不允许读取项目根目录以外的文件: {file_path}"
         print(f"[excel_reader输出] {result}")
         return result
 
-    if not file_path.lower().endswith(".xlsx"):
+    if not os.path.exists(target):
+        result = f"错误: 文件不存在: {file_path}"
+        print(f"[excel_reader输出] {result}")
+        return result
+
+    if not os.path.isfile(target):
+        result = f"错误: 路径不是文件: {file_path}"
+        print(f"[excel_reader输出] {result}")
+        return result
+
+    if not target.lower().endswith(".xlsx"):
         result = "错误: 仅支持 .xlsx 格式的Excel文件"
         print(f"[excel_reader输出] {result}")
         return result
 
     wb = None
     try:
-        from openpyxl import load_workbook
-        wb = load_workbook(file_path, read_only=True, data_only=True)
+        wb = load_workbook(target, read_only=True, data_only=True)
         ws = wb.active
 
         if ws is None:
