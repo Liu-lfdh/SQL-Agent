@@ -16,7 +16,7 @@ from FunctionCalling.CreateFile import create_file
 from FunctionCalling.DeleteFile import delete_file
 from FunctionCalling.EnvironmentAgentTool import environment_agent_tool;
 from FunctionCalling.SqlAgentTool import sql_agent_tool;
-from FunctionCalling.ExcelAgentTool import excel_agent_tool;
+from FunctionCalling.ExcelAgentTool import excel_agent_tool
 from Prompt.MasterPrompt import MasterPrompt
 from Llm.Deepseek import Deepseek
 from Database_Data.Database import get_db_config
