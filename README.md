@@ -8,6 +8,7 @@
 
 - **自然语言查询**：用自然语言描述需求，Agent 自动生成并执行对应 SQL
 - **数据库结构探索**：自动发现数据库表结构、字段信息、索引等元数据
+- **Excel 数据导入**：读取 `.xlsx` 文件，智能映射列到数据库字段，用户确认后批量插入
 - **多 Agent 协作**：主控 Agent 根据任务类型智能路由到专用子 Agent
 - **上下文持久化**：对话历史自动保存为 JSON，支持跨会话恢复
 - **SQL 安全保护**：危险操作（DELETE/UPDATE/DROP 等）执行前需手动确认
@@ -24,11 +25,14 @@ SQL-Agent/
 │   ├── MasterAgent.py           # 主控 Agent，负责任务路由
 │   ├── SqlAgent.py              # SQL 生成专家 Agent
 │   ├── EnvironmentAgent.py      # 数据库结构探索 Agent
+│   ├── ExcelAgent.py            # Excel 数据导入 Agent
 │   ├── TitleAgent.py            # 会话标题生成 Agent
 │   └── TestAgent.py             # 测试用 Agent
 │
 ├── FunctionCalling/             # 工具函数
 │   ├── DatabaseTool.py          # SQL 执行工具 (input_sql)
+│   ├── ExcelReaderTool.py       # Excel 读取工具 (excel_reader)
+│   ├── ExcelAgentTool.py        # ExcelAgent 调用工具
 │   ├── ReadFile.py              # 文件读取工具 (read_file)
 │   ├── ListFiles.py             # 目录列表工具 (readList_command)
 │   ├── WriteFile.py             # 文件写入工具 (write_file)
@@ -41,6 +45,7 @@ SQL-Agent/
 │   ├── MasterPrompt.py          # MasterAgent 提示词
 │   ├── SqlPrompt.py             # SqlAgent 提示词
 │   ├── EnvironmentPrompt.py     # EnvironmentAgent 提示词
+│   ├── ExcelPrompt.py           # ExcelAgent 提示词
 │   └── CompressionPrompt.py     # CompressionAgent 提示词
 │
 ├── Context/                     # 上下文管理
@@ -71,21 +76,28 @@ SQL-Agent/
                   |  (Deepseek LLM)   |
                   +-------------------+
                             |
-        +-------------------+-------------------+
-        |                   |                   |
-        v                   v                   v
+        +-------------------+-------------------+-------------------+
+        |                   |                   |                   |
+        v                   v                   v                   v
++----------------+  +----------------+  +---------------+  +----------------+
+| environment_   |  |    sql_agent   |  | excel_agent_  |  | 内置工具       |
+| agent_tool     |  |    tool        |  | tool          |  | input_sql     |
++----------------+  +----------------+  +---------------+  | read_file     |
+        |                   |                   |         | readList      |
+        v                   v                   v         +---------------+
 +----------------+  +----------------+  +---------------+
-| environment_   |  |    sql_agent   |  | 内置工具       |
-| agent_tool     |  |    tool        |  | input_sql     |
-+----------------+  +----------------+  | read_file     |
-        |                   |          | readList      |
-        v                   v          +---------------+
-+----------------+  +----------------+
-|EnvironmentAgent|  |   SqlAgent     |
-| (Deepseek)     |  | (Deepseek)     |
-+----------------+  +----------------+
-        |                   |
-        v                   v
+|EnvironmentAgent|  |   SqlAgent     |  |  ExcelAgent   |
+| (Deepseek)     |  | (Deepseek)     |  | (Deepseek)    |
++----------------+  +----------------+  +---------------+
+                                              |
+                                              v
+                                      +----------------+
+                                      | excel_reader   |
+                                      +----------------+
+                                              |
+                                              v
+                                       openpyxl 读取
+                                       .xlsx 文件
 +-------------------+
 |  Database.py      |  (pymysql 连接层)
 |  Database_Data/   |  (表结构缓存文件)
@@ -106,6 +118,13 @@ SQL 生成专家。接收任务描述和数据库结构信息，生成对应的 
 ### EnvironmentAgent
 数据库结构探索专家。连接 MySQL 数据库，查询库、表、字段、索引等元数据，并将结构信息缓存到 `Database_Data/` 目录。
 
+### ExcelAgent
+Excel 数据导入专家。读取 `.xlsx` 文件，根据已确认的列映射关系生成批量 INSERT SQL 并执行。
+- 通过 `excel_reader` 工具解析 Excel 文件，获取列名、数据样例和总行数
+- 根据用户提供的列映射（Excel 列名 → 数据库字段名）生成批量 INSERT 语句
+- 执行前展示 SQL 预览，用户通过 `input_sql` 内置确认机制审核后执行
+- 所有数据在同一事务中提交，任何一行失败则全部回滚
+
 ### TitleAgent
 会话标题生成器。根据用户的第一条消息自动生成简洁的会话标题（20 字符以内）。
 
@@ -122,8 +141,10 @@ SQL 生成专家。接收任务描述和数据库结构信息，生成对应的 
 | `write_file` | 写入文件到 `Database_Data/` |
 | `create_file` | 创建 `.txt` 文件到 `Database_Data/` |
 | `delete_file` | 删除 `Database_Data/` 中的文件 |
+| `excel_reader` | 读取 `.xlsx` 文件，返回列名、样例数据、总行数和列类型推断 |
 | `environment_agent_tool` | 调用 EnvironmentAgent 进行数据库结构探索 |
 | `sql_agent_tool` | 调用 SqlAgent 进行 SQL 生成 |
+| `excel_agent_tool` | 调用 ExcelAgent 进行 Excel 数据导入 |
 
 ## 快速开始
 
@@ -135,7 +156,7 @@ SQL 生成专家。接收任务描述和数据库结构信息，生成对应的 
 ### 安装依赖
 
 ```bash
-pip install pymysql langchain langchain-openai
+pip install pymysql langchain langchain-openai openpyxl
 ```
 
 ### 配置数据库
@@ -163,6 +184,22 @@ python main.py
 3. 输入自然语言问题即可开始对话
 4. 输入 `exit` 退出程序
 
+### Excel 数据导入
+
+向对话中输入类似以下的指令即可触发 Excel 导入流程：
+
+```
+将 ./test_coupon_info.xlsx 导入到 coupon_info 表中
+```
+
+MasterAgent 会自动：
+1. 读取 Excel 文件的列名和数据样例
+2. 查询目标表结构，推断列映射关系
+3. 向你展示映射表格，等待确认
+4. 确认后将任务交给 ExcelAgent 执行插入
+
+ExcelAgent 会生成批量 INSERT SQL，展示预览后通过 `input_sql` 执行。
+
 ## 上下文管理
 
 ### 会话持久化
@@ -185,3 +222,4 @@ python main.py
 - **LangChain**：Agent 框架，提供 `create_agent` 和工具链
 - **langchain-openai**：LLM 接口，通过 OpenAI 兼容协议接入 Deepseek
 - **PyMySQL**：MySQL 数据库连接
+- **openpyxl**：Excel (.xlsx) 文件读取与解析
