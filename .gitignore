@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+
+# Claude Code
+.claude/
+
+# Runtime data
+Context/Data/
+Database_Data/*_*/
+
+# Test files
+*.xlsx
