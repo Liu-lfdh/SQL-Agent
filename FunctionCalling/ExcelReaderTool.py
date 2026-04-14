@@ -52,10 +52,14 @@ def excel_reader(file_path: str) -> str:
             wb.close()
             return result
 
-        # 推断每列的数据类型
+        # 推断每列的数据类型（使用所有数据行，安全处理缺省列）
+        num_cols = len(columns)
         dtypes = {}
-        for col_idx in range(len(columns)):
-            vals = [row[col_idx] for row in data_rows if row[col_idx] is not None]
+        for col_idx in range(num_cols):
+            vals = []
+            for row in data_rows:
+                if col_idx < len(row) and row[col_idx] is not None:
+                    vals.append(row[col_idx])
             if not vals:
                 dtypes[columns[col_idx]] = "unknown"
                 continue
