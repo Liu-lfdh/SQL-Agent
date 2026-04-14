@@ -18,11 +18,19 @@ def excel_reader(file_path: str) -> str:
         print(f"[excel_reader输出] {result}")
         return result
 
-    if not file_path.endswith(".xlsx"):
+    # 安全检查：确保文件路径在项目根目录下
+    abs_root = os.path.abspath(".")
+    if not file_path.startswith(abs_root + os.sep) and file_path != abs_root:
+        result = f"错误: 不允许读取项目根目录以外的文件: {file_path}"
+        print(f"[excel_reader输出] {result}")
+        return result
+
+    if not file_path.lower().endswith(".xlsx"):
         result = "错误: 仅支持 .xlsx 格式的Excel文件"
         print(f"[excel_reader输出] {result}")
         return result
 
+    wb = None
     try:
         from openpyxl import load_workbook
         wb = load_workbook(file_path, read_only=True, data_only=True)
@@ -31,7 +39,6 @@ def excel_reader(file_path: str) -> str:
         if ws is None:
             result = "错误: 无法读取Excel工作表"
             print(f"[excel_reader输出] {result}")
-            wb.close()
             return result
 
         rows = list(ws.iter_rows(values_only=True))
@@ -39,7 +46,6 @@ def excel_reader(file_path: str) -> str:
         if not rows:
             result = "错误: Excel文件为空"
             print(f"[excel_reader输出] {result}")
-            wb.close()
             return result
 
         columns = [str(h) for h in rows[0]]
@@ -49,7 +55,6 @@ def excel_reader(file_path: str) -> str:
         if total_rows == 0:
             result = "错误: Excel文件只有表头，没有数据行"
             print(f"[excel_reader输出] {result}")
-            wb.close()
             return result
 
         # 推断每列的数据类型（使用所有数据行，安全处理缺省列）
@@ -82,9 +87,11 @@ def excel_reader(file_path: str) -> str:
 
         result = "\n".join(lines)
         print(f"[excel_reader输出] 成功读取Excel，{total_rows}行 x {len(columns)}列")
-        wb.close()
         return result
     except Exception as e:
         result = f"读取Excel失败: {str(e)}"
         print(f"[excel_reader输出] {result}")
         return result
+    finally:
+        if wb is not None:
+            wb.close()
