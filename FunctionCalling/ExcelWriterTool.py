@@ -6,7 +6,7 @@ ALLOWED_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../Databa
 
 
 @tool
-def excel_writer(columns: list, rows: list, file_name: str = "export_result.xlsx") -> str:
+def excel_writer(columns: list[str], rows: list[list], file_name: str = "export_result.xlsx") -> str:
     """将查询结果写入 Excel(.xlsx) 文件
     Args:
         columns: 列名列表，例如 ["id", "name", "email"]
@@ -40,6 +40,10 @@ def excel_writer(columns: list, rows: list, file_name: str = "export_result.xlsx
         ws = wb.active
         ws.append(columns)
         for row in rows:
+            if len(row) != len(columns):
+                result = f"错误: 数据行长度({len(row)})与列数({len(columns)})不匹配"
+                print(f"[excel_writer输出] {result}")
+                return result
             ws.append([str(v) if v is not None else None for v in row])
         wb.save(full_path)
         wb.close()
