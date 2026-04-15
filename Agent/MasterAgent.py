@@ -18,18 +18,19 @@ from FunctionCalling.EnvironmentAgentTool import environment_agent_tool;
 from FunctionCalling.SqlAgentTool import sql_agent_tool;
 from FunctionCalling.ExcelAgentTool import excel_agent_tool
 from FunctionCalling.ExcelReaderTool import excel_reader
+from FunctionCalling.ReadSkill import read_skill
 from Prompt.MasterPrompt import MasterPrompt
 from Llm.Deepseek import Deepseek
 from Database_Data.Database import get_db_config
+from Skill.skills import get_skill_prompt
 
 class MasterAgent:
     def create_agent(self):
-        tools = [input_sql, read_file, readList_command, environment_agent_tool, sql_agent_tool, excel_agent_tool, excel_reader]
-        
+        tools = [input_sql, read_file, readList_command, environment_agent_tool, sql_agent_tool, excel_agent_tool, excel_reader, read_skill]
 
         agent = create_agent(
             model=Deepseek().getLlm(),
             tools=tools,
-            system_prompt=SystemMessage(content="当前连接数据库信息：" + str(get_db_config()) + " " + MasterPrompt.getPrompt()),
+            system_prompt=SystemMessage(content="当前连接数据库信息：" + str(get_db_config()) + " " + MasterPrompt.getPrompt() + "\n" + get_skill_prompt()),
             )
         return agent
