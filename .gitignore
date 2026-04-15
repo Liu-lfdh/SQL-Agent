@@ -9,6 +9,7 @@ venv/
 
 # Claude Code
 .claude/
+CLAUDE.md
 
 # Runtime data
 Context/Data/
