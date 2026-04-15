@@ -14,7 +14,7 @@ from FunctionCalling.ReadFile import read_file
 from FunctionCalling.ListFiles import readList_command
 from FunctionCalling.CreateFile import create_file
 from FunctionCalling.DeleteFile import delete_file
-from FunctionCalling.EnvironmentAgentTool import environment_agent_tool;
+from FunctionCalling.SchemaDiscoveryTool import discover_schema
 from FunctionCalling.SqlAgentTool import sql_agent_tool;
 from FunctionCalling.ExcelAgentTool import excel_agent_tool
 from FunctionCalling.ExcelReaderTool import excel_reader
@@ -27,7 +27,7 @@ from Skill.skills import get_skill_prompt
 
 class MasterAgent:
     def create_agent(self):
-        tools = [input_sql, read_file, readList_command, environment_agent_tool, sql_agent_tool, excel_agent_tool, excel_reader, read_skill, excel_writer]
+        tools = [input_sql, read_file, readList_command, discover_schema, sql_agent_tool, excel_agent_tool, excel_reader, read_skill, excel_writer]
 
         agent = create_agent(
             model=Deepseek().getLlm(),
