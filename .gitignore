@@ -14,5 +14,8 @@ venv/
 Context/Data/
 Database_Data/*_*/
 
+# Environment variables
+.env
+
 # Test files
 *.xlsx
