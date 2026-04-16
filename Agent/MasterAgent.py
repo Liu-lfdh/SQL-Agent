@@ -21,6 +21,7 @@ from FunctionCalling.ExcelReaderTool import excel_reader
 from FunctionCalling.ReadSkill import read_skill
 from FunctionCalling.ExcelWriterTool import excel_writer
 from FunctionCalling.ExcelImportTool import excel_import
+from FunctionCalling.ExcelExportTool import excel_export
 from Prompt.MasterPrompt import MasterPrompt
 from Llm.Deepseek import Deepseek
 from Database_Data.Database import get_db_config
@@ -28,7 +29,7 @@ from Skill.skills import get_skill_prompt
 
 class MasterAgent:
     def create_agent(self):
-        tools = [input_sql, read_file, readList_command, discover_schema, sql_agent_tool, excel_agent_tool, excel_reader, read_skill, excel_writer, excel_import]
+        tools = [input_sql, read_file, readList_command, discover_schema, sql_agent_tool, excel_agent_tool, excel_reader, read_skill, excel_writer, excel_import, excel_export]
 
         agent = create_agent(
             model=Deepseek().getLlm(),
