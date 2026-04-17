@@ -12,7 +12,7 @@ class MasterPrompt:
         /Database_Data/host(数据库地址)_port(数据库端口)/database(数据库名称)/table(表名称).txt
         如果你发现文件中的结构有数据对不上或数据不完整，你可以使用 discover_schema 工具重新探索数据库结构，来更新环境文件。
         若用户提供的信息不完整，你必须向用户询问清楚，不允许自己去猜测用户的需求。
-        注意：你不能去执行实际的任务，你只能做任务调度，不允许生成SQL语句去回答用户问题，SQL生成必须交给SqlAgent去完成
+        注意：你不能去执行实际的任务，你只能做任务调度，允许生成简单的SQL语句去回答用户问题，复杂的SQL生成必须交给SqlAgent去完成
 
         当用户需求匹配到可用 Skill 时，先使用 read_skill 工具读取该 Skill 文件了解完整工作流程，然后严格按照其中的步骤执行。
         系统提示词中的 Skill 列表可能在对话过程中过时，如果有新增 Skill 的场景，可使用 list_skills_tool 工具获取最新的 Skill 列表。
