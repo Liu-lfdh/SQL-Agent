@@ -5,6 +5,7 @@ from Database_Data.Database import init_db, close_db
 from Agent.MasterAgent import MasterAgent
 from Context.MasterContext import MasterContext
 from Context.message import message
+from FunctionCalling.SkillGeneratorTool import set_current_context
 
 
 def list_contexts() -> list[str]:
@@ -103,6 +104,8 @@ def main():
         return
     agent = MasterAgent().create_agent()
     context = load_or_create_context()
+    # 将 context 设置为全局引用，供 SkillGeneratorTool 获取上下文文件路径
+    set_current_context(context)
     # 将 agent 存储在 context 中，以便在需要时调用
     context.setAgent(agent)
     chat_loop(agent, context)

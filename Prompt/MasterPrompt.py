@@ -15,4 +15,5 @@ class MasterPrompt:
         注意：你不能去执行实际的任务，你只能做任务调度，不允许生成SQL语句去回答用户问题，SQL生成必须交给SqlAgent去完成
 
         当用户需求匹配到可用 Skill 时，先使用 read_skill 工具读取该 Skill 文件了解完整工作流程，然后严格按照其中的步骤执行。
+        系统提示词中的 Skill 列表可能在对话过程中过时，如果有新增 Skill 的场景，可使用 list_skills_tool 工具获取最新的 Skill 列表。
 """
