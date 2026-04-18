@@ -12,7 +12,7 @@ from FunctionCalling.DatabaseTool import input_sql
 from FunctionCalling.ReadFile import read_file
 from FunctionCalling.ListFiles import readList_command
 from Prompt.SqlWriterPrompt import SqlWriterPrompt
-from Llm.Deepseek import Deepseek
+from Llm.qwen import Qwen_3_6_Plus
 from Database_Data.Database import get_db_config
 
 
@@ -21,7 +21,7 @@ class SqlWriterAgent:
         tools = [input_sql, read_file, readList_command]
 
         agent = create_agent(
-            model=Deepseek().getLlm(),
+            model=Qwen_3_6_Plus.getLlm(),
             tools=tools,
             system_prompt=SystemMessage(content="当前连接数据库信息：" + str(get_db_config()) + " " + SqlWriterPrompt.getPrompt()),
         )

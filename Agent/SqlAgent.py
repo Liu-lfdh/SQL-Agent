@@ -14,15 +14,15 @@ from FunctionCalling.ReadFile import read_file
 from FunctionCalling.ListFiles import readList_command
 from FunctionCalling.CreateFile import create_file
 from Prompt.SqlPrompt import SqlPrompt
-from Llm.Deepseek import Deepseek
+from Llm.qwen import Qwen_3_6_Plus
 from Database_Data.Database import get_db_config
 
 class SqlAgent:
     def create_agent(self):
         tools = [input_sql,read_file,readList_command]
-        
+
         agent = create_agent(
-            model=Deepseek().getLlm(),
+            model=Qwen_3_6_Plus.getLlm(),
             tools=tools,
             system_prompt=SystemMessage(content="当前连接数据库信息：" + str(get_db_config()) + " " + SqlPrompt.getPrompt()),
             )
