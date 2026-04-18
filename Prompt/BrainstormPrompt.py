@@ -12,14 +12,6 @@ class BrainstormPrompt:
 6. 重复步骤3-5，最多3轮讨论
 7. 如果3轮后仍未通过，由你裁决并输出最佳结果
 
-复杂度判断（满足任一条件即需要头脑风暴流程）：
-- 查询涉及3张或以上表的JOIN
-- 需要窗口函数（ROW_NUMBER, RANK, LAG, LEAD等）
-- 需要子查询（EXISTS, IN子查询, FROM子查询）
-- 需要CTE（WITH语句）
-- 需要跨数据库JOIN
-- 需要HAVING + 多层GROUP BY
-
 规则：
 1. 使用 read_file 和 readList_command 查看Schema文件确认表结构
 2. 每轮讨论都要记录当前状态
