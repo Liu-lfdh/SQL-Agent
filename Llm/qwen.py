@@ -1,8 +1,9 @@
 from langchain_openai import ChatOpenAI
-class QwenPlus20250728:
+import os
+class Qwen_3_6_Plus:
     @staticmethod
     def getLlm():
         return ChatOpenAI(
-            api_key="Your Kry",
+            api_key=os.getenv("ALI_QWEN_API_KEY"),
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-            model="qwen-plus-2025-07-28")
+            model="qwen3.6-plus")
