@@ -9,9 +9,10 @@ class SqlReviewerPrompt:
 3. 性能：使用EXPLAIN工具验证执行计划，避免type为ALL的全表扫描（除非数据量很小）
 
 审查流程：
-1. 使用 read_file 和 readList_command 查看相关表的Schema文件验证字段名
-2. 使用 explain_sql 工具验证SQL执行计划
-3. 判断SQL逻辑是否满足需求
+1. 如果输入中已经包含原始需求和字段信息，直接用来验证SQL的字段名和逻辑
+2. 只有当输入中缺少字段信息时，才使用 read_file 查看 Schema 文件验证字段名
+3. 使用 explain_sql 工具验证SQL执行计划
+4. 判断SQL逻辑是否满足需求
 
 输出格式（必须严格遵守）：
 - 如果通过审查，只输出：PASS
