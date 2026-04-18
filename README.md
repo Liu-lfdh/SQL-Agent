@@ -2,7 +2,7 @@
 
 # SQL-Agent
 
-基于 Windows 操作系统的 MySQL 数据库智能 Agent，采用多 Agent + Skill 架构，支持自然语言对话式的 SQL 查询生成、执行、数据库结构探索和 Excel 数据导入/导出。
+基于 Windows 操作系统的 MySQL 数据库智能 Agent，采用多 Agent 协作架构，支持自然语言对话式的 SQL 查询生成、执行、数据库结构探索和 Excel 数据导入/导出。复杂查询通过 Writer + Reviewer 多 Agent 头脑风暴机制自动生成高质量 SQL。
 
 ## 功能特性
 
@@ -11,7 +11,8 @@
 - **Excel 数据导入**：读取 `.xlsx` 文件，智能映射列到数据库字段，用户确认后批量插入
 - **Excel 数据导出**：将数据库查询结果导出为 `.xlsx` 文件
 - **Skill 系统**：可扩展的 Skill 文档驱动工作流，新增能力只需添加 `.md` 文件
-- **多 Agent 协作**：主控 Agent 根据任务类型智能路由到专用子 Agent
+- **多 Agent 协作**：主控 Agent 根据任务复杂度智能路由到专用子 Agent
+- **头脑风暴机制**：复杂查询自动触发 Writer + Reviewer 多轮讨论，配合 EXPLAIN 性能验证，生成高质量 SQL
 - **上下文持久化**：对话历史自动保存为 JSON，支持跨会话恢复
 - **SQL 安全保护**：危险操作（DELETE/UPDATE/DROP 等）执行前需手动确认
 - **大内容自动卸载**：超过 20KB 的工具输出自动存储为独立文件，避免上下文膨胀
@@ -25,9 +26,12 @@ SQL-Agent/
 │
 ├── Agent/                       # Agent 定义
 │   ├── MasterAgent.py           # 主控 Agent，负责任务路由
-│   ├── SqlAgent.py              # SQL 生成专家 Agent
+│   ├── SqlAgent.py              # SQL 生成专家 Agent (Qwen)
 │   ├── ExcelAgent.py            # Excel 数据导入 Agent
-│   └── TitleAgent.py            # 会话标题生成 Agent
+│   ├── TitleAgent.py            # 会话标题生成 Agent
+│   ├── BrainstormAgent.py       # 头脑风暴协调者 Agent (Qwen)
+│   ├── SqlWriterAgent.py        # SQL Writer Agent (Qwen)
+│   └── SqlReviewerAgent.py      # SQL Reviewer Agent (Qwen)
 │
 ├── FunctionCalling/             # 工具函数
 │   ├── DatabaseTool.py          # SQL 执行工具 (input_sql)
@@ -41,13 +45,20 @@ SQL-Agent/
 │   ├── CreateFile.py            # 文件创建工具 (create_file)
 │   ├── DeleteFile.py            # 文件删除工具 (delete_file)
 │   ├── ExcelAgentTool.py        # ExcelAgent 调用工具
-│   └── SqlAgentTool.py          # SqlAgent 调用工具
+│   ├── SqlAgentTool.py          # SqlAgent 调用工具
+│   ├── BrainstormAgentTool.py   # BrainstormAgent 调用工具
+│   ├── SqlWriterTool.py         # SQL Writer 调用工具
+│   ├── SqlReviewerTool.py       # SQL Reviewer 调用工具
+│   └── ExplainTool.py           # EXPLAIN 性能分析工具
 │
 ├── Prompt/                      # 系统提示词
 │   ├── MasterPrompt.py          # MasterAgent 提示词
 │   ├── SqlPrompt.py             # SqlAgent 提示词
 │   ├── ExcelPrompt.py           # ExcelAgent 提示词
-│   └── CompressionPrompt.py     # CompressionAgent 提示词
+│   ├── CompressionPrompt.py     # CompressionAgent 提示词
+│   ├── BrainstormPrompt.py      # BrainstormAgent 提示词
+│   ├── SqlWriterPrompt.py       # SqlWriterAgent 提示词
+│   └── SqlReviewerPrompt.py     # SqlReviewerAgent 提示词
 │
 ├── Skill/                       # Skill 文档目录
 │   ├── skills.py                # Skill 元数据扫描器
@@ -80,32 +91,33 @@ SQL-Agent/
                             |
                             v
                   +-------------------+
-                  |   MasterAgent     |  (任务编排/路由)
-                  |  (Deepseek LLM)   |
+                  |   MasterAgent     |  (复杂度判断 + 任务路由)
+                  |                   |
                   +-------------------+
                             |
         +-------------------+-------------------+-------------------+
         |                   |                   |                   |
         v                   v                   v                   v
-+----------------+  +----------------+  +---------------+  +----------------+
-| discover_schema|  |    sql_agent   |  | excel_agent_  |  | 内置工具       |
-| (纯 Python 代码) |  |    tool        |  | tool          |  | input_sql     |
-+----------------+  +----------------+  +---------------+  | read_file     |
-        |                   |                   |         | readList      |
-        v                   v                   v         +---------------+
-+----------------+  +----------------+  +---------------+
-|SchemaDiscovery |  |   SqlAgent     |  |  ExcelAgent   |
-| (纯 Python 代码) |  | (Deepseek)     |  | (Deepseek)    |
-+----------------+  +----------------+  +---------------+
-                                              |
-                                              v
-                                      +----------------+
-                                      | excel_reader   |
-                                      +----------------+
-                                              |
-                                              v
-                                       openpyxl 读取
-                                       .xlsx 文件
+  简单SQL查询        复杂SQL查询          Excel导入/导出       Skill工作流
+   sql_agent_tool    brainstorm_agent_tool   excel_agent_tool    read_skill
+        |                   |                   |
+        v                   v                   v
+  +-----------+      +---------------+   +-----------+
+  | SqlAgent  |      |BrainstormAgent|   |ExcelAgent |
+  |  (Qwen)   |      |   (Qwen)      |   |           |
+  +-----------+      +---------------+   +-----------+
+                           |
+                    ┌──────┴──────┐
+                    |             |
+                Writer         Reviewer
+             (生成SQL)     (审查SQL+EXPLAIN)
+                    |             |
+                    └──────┬──────┘
+                           |
+                    讨论循环（最多3轮）
+                    Writer生成 → Reviewer审查
+                    → 通过? 输出SQL
+                    → 不通过? 提意见 → Writer重写
 +-------------------+
 |  Database.py      |  (pymysql 连接层)
 |  Database_Data/   |  (表结构缓存文件)
@@ -121,7 +133,15 @@ SQL-Agent/
 主控 Agent，负责任务识别和路由。不直接生成 SQL 或执行查询，而是根据用户意图将任务委派给专用子 Agent 或 Skill。
 
 ### SqlAgent
-SQL 生成专家。接收任务描述和数据库结构信息，生成对应的 SQL 查询语句。
+SQL 生成专家（使用 Qwen 模型）。接收任务描述和数据库结构信息，生成对应的 SQL 查询语句。适用于简单查询场景。
+
+### BrainstormAgent
+复杂 SQL 头脑风暴协调者（使用 Qwen 模型）。当查询涉及多表 JOIN、子查询、窗口函数、CTE 等复杂逻辑时自动触发。内部通过 Writer + Reviewer 双 Agent 讨论循环生成 SQL：
+
+1. **Writer** 根据需求生成初版 SQL
+2. **Reviewer** 审查 SQL（语法、逻辑匹配、EXPLAIN 性能分析）
+3. 审查通过 → 输出最终 SQL；不通过 → 提意见给 Writer 重写
+4. 最多讨论 3 轮，超过由 BrainstormAgent 裁决输出
 
 ### ExcelAgent
 Excel 数据导入专家。读取 `.xlsx` 文件，根据已确认的列映射关系生成批量 INSERT SQL 并执行。
@@ -168,6 +188,10 @@ SQL-Agent 采用 Skill 文档驱动的可扩展架构。每个 Skill 是一个 `
 | `read_skill` | 读取指定名称的 Skill 工作流程文件 |
 | `sql_agent_tool` | 调用 SqlAgent 进行 SQL 生成 |
 | `excel_agent_tool` | 调用 ExcelAgent 进行 Excel 数据导入 |
+| `brainstorm_agent_tool` | 调用 BrainstormAgent 进行复杂 SQL 头脑风暴生成 |
+| `sql_writer_tool` | BrainstormAgent 内部调用 SQL Writer |
+| `sql_reviewer_tool` | BrainstormAgent 内部调用 SQL Reviewer |
+| `explain_sql` | 执行 EXPLAIN 语句，返回 SQL 执行计划用于性能分析 |
 
 ## 快速开始
 
@@ -188,6 +212,7 @@ pip install pymysql langchain langchain-openai openpyxl python-dotenv
 
 ```
 DEEPSEEK_API_KEY=your-api-key-here
+ALI_QWEN_API_KEY=your-qwen-api-key-here
 ```
 
 在 [main.py](main.py) 的 `init_db_connection()` 函数中修改数据库连接信息：
@@ -277,7 +302,9 @@ ExcelAgent 会生成批量 INSERT SQL，展示预览后通过 `input_sql` 执行
 ## 技术栈
 
 - **LangChain**：Agent 框架，提供 `create_agent` 和工具链
-- **langchain-openai**：LLM 接口，通过 OpenAI 兼容协议接入 Deepseek
+- **langchain-openai**：LLM 接口，通过 OpenAI 兼容协议接入 Deepseek / Qwen
+- **Deepseek Chat**：MasterAgent 使用的主模型
+- **Qwen 3.6-Plus**：SqlAgent、BrainstormAgent、Writer、Reviewer 使用的模型
 - **PyMySQL**：MySQL 数据库连接
 - **openpyxl**：Excel (.xlsx) 文件读取与解析
 - **python-dotenv**：环境变量管理
